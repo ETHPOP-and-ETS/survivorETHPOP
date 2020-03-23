@@ -1,0 +1,24 @@
+---
+title: "how to use"
+author: "Nathan Green"
+date: "17/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We'll need to calculate these curves by calculating the proportion of people in each age, sex, ethnicity group who die each year (with those who emigrate being censored, of course).
+Of course, we'll need a separate survivorship curve for each year of birth, as life expectancy changes over time.
+I expect there to be sex differences; if ethnicity doesn't make a difference then we can aggregate across ethnicity.
+
+cumulative
+
+```{r}
+library(readr)
+library(dplyr)
+
+survivor_curve()
+
+```
