@@ -1,24 +1,206 @@
 ---
-title: "how to use"
+title: "Analysis"
 author: "Nathan Green"
 date: "17/03/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: 
+    keep_tex: yes
+    number_sections: yes
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-We'll need to calculate these curves by calculating the proportion of people in each age, sex, ethnicity group who die each year (with those who emigrate being censored, of course).
+calculate these curves by calculating the proportion of people in each age, sex, ethnicity group who die each year (with those who emigrate being censored, of course).
 Of course, we'll need a separate survivorship curve for each year of birth, as life expectancy changes over time.
-I expect there to be sex differences; if ethnicity doesn't make a difference then we can aggregate across ethnicity.
+expect there to be sex differences; if ethnicity doesn't make a difference then we can aggregate across ethnicity.
 
-cumulative
+ETHPOP is based on ONS data in what year?
 
-```{r}
+
+```{r comment=FALSE, warning=FALSE, message=FALSE}
 library(readr)
+library(purrr)
 library(dplyr)
+library(ggplot2)
+library(scales)
+library(survivorETHPOP)
+```
 
-survivor_curve()
+# ETHPOP
+
+[How ONS calculated lifetables.](https://www.ons.gov.uk/peoplepopulationandcommunity/healthandsocialcare/healthandlifeexpectancies/methodologies/guidetocalculatingnationallifetables)
+
+The central rate of mortality
+$$
+m_x = \sum_{y1,y2,y3} deaths_i/ \sum_{y1,y2,y3} pop_i
+$$
+
+Mortality rate
+$$
+q_x = 2 m_x/(2 + m_x)
+$$
+
+
+## Individual categories hazards and survival
+
+```{r comment=FALSE, warning=FALSE, message=FALSE}
+
+ETHPOP_lifetable <- make_ETHPOP_lifetable()
+
+ETHPOP_lifetable %>% 
+  survivor_curve(group = list(sex = "M",
+                              ETH.group = "WHO",
+                              year = 2011)) %>%
+  haz_plot()
+
+for (i in 2012:2043) {
+  ETHPOP_lifetable %>% 
+    survivor_curve(group = list(sex = "M",
+                                ETH.group = "WHO",
+                                year = i)) %>% 
+    haz_plot(add = TRUE)
+}
+
+ETHPOP_lifetable %>% 
+  survivor_curve(group = list(sex = "M",
+                              ETH.group = "WHO",
+                              year = 2011)) %>% 
+  haz_plot()
+
+ETHPOP_lifetable %>% 
+  survivor_curve(group = list(sex = "M",
+                              ETH.group = "WHO",
+                              year = 2049)) %>% 
+  haz_plot(add = TRUE)
+
+par(mfrow=c(1,2))
+ETHPOP_lifetable %>% 
+  survivor_curve(group = list(sex = "M",
+                              ETH.group = "BAN",
+                              year = 2011)) %>% 
+  haz_plot() %>% 
+  surv_plot()
+```
+
+### Ethnic groups
+
+```{r comment=FALSE, warning=FALSE, message=FALSE}
+ethnic_grps <- c("BAN", "BLA", "BLC", "CHI", "IND", "MIX",
+                 "OAS", "OBL", "OTH", "PAK", "WBI", "WHO")
+
+ETHPOP_lifetable %>% 
+  survivor_curve(group = list(sex = "M",
+                              ETH.group = "BAN",
+                              year = 2011)) %>% 
+  haz_plot()
+
+for (i in ethnic_grps) {
+  ETHPOP_lifetable %>% 
+    survivor_curve(group = list(sex = "M",
+                                ETH.group = i,
+                                year = 2011)) %>% 
+    haz_plot(add = TRUE)
+}
+
+outM <- outF <- list()
+
+for (i in ethnic_grps) {
+  outM[[i]] <-
+    ETHPOP_lifetable %>% 
+    survivor_curve(group = list(sex = "M",
+                                ETH.group = i,
+                                year = 2011)) 
+  outF[[i]] <-
+    ETHPOP_lifetable %>% 
+    survivor_curve(group = list(sex = "F",
+                                ETH.group = i,
+                                year = 2011)) 
+}
+
+ETHPOP_lifetable2011M <- do.call(rbind, outM)
+ETHPOP_lifetable2011F <- do.call(rbind, outF)
+ETHPOP_lifetable2011  <- rbind(ETHPOP_lifetable2011M,
+                               ETHPOP_lifetable2011F) 
+
+## ggplot
+
+ggplot(ETHPOP_lifetable2011M, aes(x = age, y = prop, colour = ETH.group)) +
+  geom_line() +
+  # scale_y_continuous(trans='log2') +
+  coord_trans(y = "log10") +
+  theme_bw()
+
+ggplot(ETHPOP_lifetable2011M, aes(x = age, y = S, colour = ETH.group)) +
+  geom_line() +
+  theme_bw()
+```
+
+# ONS lifetables
+
+```{r comment=FALSE, warning=FALSE, message=FALSE}
+
+lifetables <- read_lifetables()
+
+par(mfrow= c(2,3))
+for (i in seq_along(lifetables)) {
+  plot(x = lifetables[[i]]$year[lifetables[[i]]$sex == "M"],
+       y = lifetables[[i]]$qx[lifetables[[i]]$sex == "M"], log = "y", type = "l",
+       main = lifetables[[i]]$year[1], ylab = "h", xlab = "year")
+  lines(x = lifetables[[i]]$year[lifetables[[i]]$sex == "F"],
+        y = lifetables[[i]]$qx[lifetables[[i]]$sex == "F"], log = "y", type = "l", col = "red")
+}
+
+par(mfrow= c(1,2))
+
+for (j in c("M","F")) {
+  plot(x = lifetables[[1]]$age[lifetables[[1]]$sex == j],
+       y = lifetables[[1]]$qx[lifetables[[1]]$sex == j], log = "y", type = "l",
+       main = j, ylab = "h", xlab = "age")
+  for (i in seq_along(lifetables)) {
+    lines(x = lifetables[[i]]$age[lifetables[[i]]$sex == j],
+          y = lifetables[[i]]$qx[lifetables[[i]]$sex == j], log = "y", type = "l", col = i)
+  }
+}
+
+## ggplot
+
+ONS_lifetables <-
+  do.call(rbind, lifetables) %>% 
+  cbind(id = rep(c(2011, 2030, 2040, 2050, 2060), each = 101))
+
+ggplot(ONS_lifetables, aes(x = age, y = qx, colour = interaction(sex, id))) +
+  geom_line() +
+  # scale_y_continuous(trans='log2') +
+  coord_trans(y = "log10") +
+  theme_bw()
 
 ```
+
+# Comparison with ONS and ETHPOP
+
+```{r}
+
+ggplot(ETHPOP_lifetable2011M, aes(x = age, y = prop, colour = ETH.group)) +
+  geom_line() +
+  coord_trans(y = "log10") +
+  ggtitle("Male 2011") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "M", ], colour = "black")
+
+ggplot(ETHPOP_lifetable2011F, aes(x = age, y = prop, colour = ETH.group)) +
+  geom_line() +
+  ggtitle("Female 2011") +
+  coord_trans(y = "log10") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "F", ], colour = "black")
+```
+
+
+
+# Extrapolation of ETHPOP
+
