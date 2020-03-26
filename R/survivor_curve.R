@@ -1,6 +1,9 @@
 
 #' survivor_curve
 #'
+#' Filter by year of birth in particular calendar year
+#' and ethnic group and sex.
+#'
 #' @param group
 #' @param dat
 #'
@@ -24,8 +27,7 @@ survivor_curve <- function(dat,
     dat %>%
     filter(yr_age %in% year_age,
            sex == group$sex,
-           ETH.group == group$ETH.group) %>%
-    mutate(S = exp(-cumsum(prop)))
+           ETH.group == group$ETH.group)
 
   invisible(group_dat)
 }

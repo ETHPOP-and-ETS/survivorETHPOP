@@ -26,6 +26,7 @@ library(purrr)
 library(dplyr)
 library(ggplot2)
 library(scales)
+library(reshape2)
 library(survivorETHPOP)
 ```
 
@@ -50,6 +51,20 @@ $$
 
 ETHPOP_lifetable <- make_ETHPOP_lifetable()
 
+head(ETHPOP_lifetable)
+
+ETHPOP_lifetable %>% 
+  survivor_curve(group = list(sex = "M",
+                              ETH.group = "WHO",
+                              year = 2011)) %>% 
+  haz_plot()
+
+ETHPOP_lifetable %>% 
+  survivor_curve(group = list(sex = "M",
+                              ETH.group = "WHO",
+                              year = 2049)) %>% 
+  haz_plot(add = TRUE)
+
 ETHPOP_lifetable %>% 
   survivor_curve(group = list(sex = "M",
                               ETH.group = "WHO",
@@ -64,20 +79,8 @@ for (i in 2012:2043) {
     haz_plot(add = TRUE)
 }
 
-ETHPOP_lifetable %>% 
-  survivor_curve(group = list(sex = "M",
-                              ETH.group = "WHO",
-                              year = 2011)) %>% 
-  haz_plot()
-
-ETHPOP_lifetable %>% 
-  survivor_curve(group = list(sex = "M",
-                              ETH.group = "WHO",
-                              year = 2049)) %>% 
-  haz_plot(add = TRUE)
-
 par(mfrow=c(1,2))
-ETHPOP_lifetable %>% 
+dat <- ETHPOP_lifetable %>% 
   survivor_curve(group = list(sex = "M",
                               ETH.group = "BAN",
                               year = 2011)) %>% 
@@ -104,36 +107,38 @@ for (i in ethnic_grps) {
                                 year = 2011)) %>% 
     haz_plot(add = TRUE)
 }
+```
 
-outM <- outF <- list()
 
-for (i in ethnic_grps) {
-  outM[[i]] <-
-    ETHPOP_lifetable %>% 
-    survivor_curve(group = list(sex = "M",
-                                ETH.group = i,
-                                year = 2011)) 
-  outF[[i]] <-
-    ETHPOP_lifetable %>% 
-    survivor_curve(group = list(sex = "F",
-                                ETH.group = i,
-                                year = 2011)) 
-}
+```{r comment=FALSE, warning=FALSE, message=FALSE}
 
-ETHPOP_lifetable2011M <- do.call(rbind, outM)
-ETHPOP_lifetable2011F <- do.call(rbind, outF)
-ETHPOP_lifetable2011  <- rbind(ETHPOP_lifetable2011M,
-                               ETHPOP_lifetable2011F) 
+baseyr_2011 <- ETHPOP_lifetable$id[ETHPOP_lifetable$yr_age == "2011_0"][1]
 
+ETHPOP_lifetable_2011M <- ETHPOP_lifetable %>% 
+  filter(id == baseyr_2011,
+         sex == "M")
+
+ETHPOP_lifetable_2011F <- ETHPOP_lifetable %>% 
+  filter(id == baseyr_2011,
+         sex == "F")
+```
+
+```{r comment=FALSE, warning=FALSE, message=FALSE}
 ## ggplot
 
-ggplot(ETHPOP_lifetable2011M, aes(x = age, y = prop, colour = ETH.group)) +
+ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = death_rate, colour = ETH.group)) +
   geom_line() +
   # scale_y_continuous(trans='log2') +
   coord_trans(y = "log10") +
   theme_bw()
 
-ggplot(ETHPOP_lifetable2011M, aes(x = age, y = S, colour = ETH.group)) +
+ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = qx, colour = ETH.group)) +
+  geom_line() +
+  # scale_y_continuous(trans='log2') +
+  coord_trans(y = "log10") +
+  theme_bw()
+
+ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = S, colour = ETH.group)) +
   geom_line() +
   theme_bw()
 ```
@@ -164,7 +169,9 @@ for (j in c("M","F")) {
           y = lifetables[[i]]$qx[lifetables[[i]]$sex == j], log = "y", type = "l", col = i)
   }
 }
+```
 
+```{r comment=FALSE, warning=FALSE, message=FALSE}
 ## ggplot
 
 ONS_lifetables <-
@@ -181,23 +188,25 @@ ggplot(ONS_lifetables, aes(x = age, y = qx, colour = interaction(sex, id))) +
 
 # Comparison with ONS and ETHPOP
 
-```{r}
+```{r comment=FALSE, warning=FALSE, message=FALSE}
 
-ggplot(ETHPOP_lifetable2011M, aes(x = age, y = prop, colour = ETH.group)) +
+ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = death_rate, colour = ETH.group)) +
   geom_line() +
   coord_trans(y = "log10") +
   ggtitle("Male 2011") +
   theme_bw() +
   geom_line(aes(age, qx, colour = "ONS"),
-            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "M", ], colour = "black")
+            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "M", ],
+            colour = "black")
 
-ggplot(ETHPOP_lifetable2011F, aes(x = age, y = prop, colour = ETH.group)) +
+ggplot(ETHPOP_lifetable_2011F, aes(x = age, y = death_rate, colour = ETH.group)) +
   geom_line() +
   ggtitle("Female 2011") +
   coord_trans(y = "log10") +
   theme_bw() +
   geom_line(aes(age, qx, colour = "ONS"),
-            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "F", ], colour = "black")
+            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "F", ],
+            colour = "black")
 ```
 
 
