@@ -3,19 +3,19 @@ title: "Analysis"
 author: "Nathan Green"
 date: "17/03/2020"
 output:
-  html_document: default
   pdf_document: 
     keep_tex: yes
     number_sections: yes
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-calculate these curves by calculating the proportion of people in each age, sex, ethnicity group who die each year (with those who emigrate being censored, of course).
-Of course, we'll need a separate survivorship curve for each year of birth, as life expectancy changes over time.
-expect there to be sex differences; if ethnicity doesn't make a difference then we can aggregate across ethnicity.
+The raw annual risk of death is calculated by the proportion of people in each age, sex, ethnicity group who die each year (with those who emigrate being censored, of course).
+Separate survivorship curve for each year of birth, as life expectancy changes over time.
+There is sex differences; ethnicity doesn't make much of a difference.
 
 ETHPOP is based on ONS data in what year?
 
@@ -32,14 +32,15 @@ library(survivorETHPOP)
 
 # ETHPOP
 
-[How ONS calculated lifetables.](https://www.ons.gov.uk/peoplepopulationandcommunity/healthandsocialcare/healthandlifeexpectancies/methodologies/guidetocalculatingnationallifetables)
-
-The central rate of mortality
+We want to compare between the ONS mortality statistics and ETHPOP.
+From [here](https://www.ons.gov.uk/peoplepopulationandcommunity/healthandsocialcare/healthandlifeexpectancies/methodologies/guidetocalculatingnationallifetables)
+it details their method.
+They calculate a _central rate of mortality_ as the average across 3 years.
 $$
 m_x = \sum_{y1,y2,y3} deaths_i/ \sum_{y1,y2,y3} pop_i
 $$
 
-Mortality rate
+Finally, they calculate the _mortality rate_ which is what we will be using to compare and is equivalent to the hazard.
 $$
 q_x = 2 m_x/(2 + m_x)
 $$
@@ -209,7 +210,30 @@ ggplot(ETHPOP_lifetable_2011F, aes(x = age, y = death_rate, colour = ETH.group))
             colour = "black")
 ```
 
+```{r comment=FALSE, warning=FALSE, message=FALSE}
 
+baseyr_2030 <- ETHPOP_lifetable$id[ETHPOP_lifetable$yr_age == "2030_0"][1]
+
+ETHPOP_lifetable[ETHPOP_lifetable$id == baseyr_2030 & ETHPOP_lifetable$sex == "M", ] %>% 
+  ggplot(aes(x = age, y = death_rate, colour = ETH.group)) +
+  geom_line() +
+  coord_trans(y = "log10") +
+  ggtitle("Male 2030") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$id == 2030 & ONS_lifetables$sex == "M", ],
+            colour = "black")
+
+ETHPOP_lifetable[ETHPOP_lifetable$id == baseyr_2030 & ETHPOP_lifetable$sex == "F", ] %>% 
+  ggplot(aes(x = age, y = death_rate, colour = ETH.group)) +
+  geom_line() +
+  ggtitle("Female 2030") +
+  coord_trans(y = "log10") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$id == 2030 & ONS_lifetables$sex == "F", ],
+            colour = "black")
+```
 
 # Extrapolation of ETHPOP
 

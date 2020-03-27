@@ -10,6 +10,7 @@ Authors@R:
 Description: Wrangling and plots for subpopulations.
 Imports:
   readr,
+  reshape2,
   dplyr,
   ggplot2
 License: MIT

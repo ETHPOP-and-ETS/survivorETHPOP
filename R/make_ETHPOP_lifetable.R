@@ -18,6 +18,14 @@ make_ETHPOP_lifetable <- function(input_dir = here::here("raw data"),
   ## read in ETHPOP death data
   death_dat <- read_csv(paste0(input_dir, "/clean_deaths_ageyrs.csv"), progress = FALSE)
 
+  if(length(setdiff(unique(death_dat$ETH.group),
+                    unique(pop_dat$ETH.group))) > 0)
+    stop("Ethnic groups don't match between data sets.")
+
+  if(length(setdiff(unique(death_dat$sex),
+                    unique(pop_dat$sex))) > 0)
+    stop("Sex groups don't match between data sets.")
+
   # ## use age group
   # death_dat <- read_csv(paste0(input_dir, "/clean_deaths.csv"))
   # pop_dat$agegrp <- cut(pop_dat$age, breaks = seq(0, 105, by = 5), right = FALSE)
@@ -42,8 +50,8 @@ make_ETHPOP_lifetable <- function(input_dir = here::here("raw data"),
            avg_deaths = (deaths_back + deaths + deaths_fwd)/3, # 3 calendar year average
            avg_pop = (pop_back + pop + pop_fwd)/3,
            mx = avg_deaths/avg_pop,                            # central rate of mortality
-           mx = ifelse(is.na(mx), yes = death_rate, no = mx),  # mortality rate
-           qx = 2*mx/(2 + mx)) %>%
+           mx = ifelse(is.na(mx), yes = death_rate, no = mx),
+           qx = 2*mx/(2 + mx)) %>%                             # mortality rate
     filter(year != 2061) %>%                  # remove last year because NA number of deaths
     group_by(ETH.group, sex, id) %>%
     mutate(S = exp(-cumsum(death_rate)),

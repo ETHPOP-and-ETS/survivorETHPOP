@@ -13,21 +13,31 @@
 yr_age_id_lookup <- function(n_years = 201,
                              base_year = 1910){
 
-  mat <- NULL
+  mat <- matrix(nrow = n_years,
+                ncol = n_years)
+
+  # create diagonal array:
+  # 1  2  3 ...
+  # NA 1  2 ...
+  # NA NA 1 ...
+  # ...
 
   for (i in seq_len(n_years) - 1) {
 
-    mat <- rbind.data.frame(mat,
-                            c(rep(NA, i), seq_len(n_years - i)),
-                            stringsAsFactors = FALSE)
+    mat[i + 1, ] <- c(rep(NA, i), seq_len(n_years - i))
   }
 
-  names(mat) <- as.character(seq_len(n_years) + base_year)
-  mat <- mat %>% mutate(age = seq_len(nrow(mat)) - 1)
+  mat_names <- as.character(seq_len(n_years) + base_year)
+  mat <-
+    mat %>%
+    as.data.frame() %>%
+    `colnames<-`(mat_names) %>%
+    mutate(age = seq_len(nrow(mat)) - 1)
 
   res <-
-    melt(mat, id.vars = "age",
-         value.name = "id",
+    mat %>%
+    melt(id.vars = "age",
+         value.name = "id",          # unique group reference
          variable.name = "year") %>%
     arrange(id) %>%
     na.omit() %>%
