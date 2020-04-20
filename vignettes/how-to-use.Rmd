@@ -139,6 +139,11 @@ ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = qx, colour = ETH.group)) +
   coord_trans(y = "log10") +
   theme_bw()
 
+ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = qx, colour = ETH.group)) +
+  geom_line() +
+  # scale_y_continuous(trans='log2') +
+  theme_bw()
+
 ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = S, colour = ETH.group)) +
   geom_line() +
   theme_bw()
@@ -146,21 +151,37 @@ ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = S, colour = ETH.group)) +
 
 # ONS lifetables
 
+Read in and check.
+
 ```{r comment=FALSE, warning=FALSE, message=FALSE}
 
 lifetables <- read_lifetables()
+
+names(lifetables) <- map(lifetables, ~.$year[1])
+
+ONS_lifetables <-
+  do.call(rbind, lifetables) %>% 
+  mutate(new_yr = year < dplyr::lag(year, default = Inf),
+         id = cumsum(new_yr)) %>% 
+  group_by(id) %>% 
+  mutate(baseyr = min(year)) %>% 
+  ungroup() %>% 
+  select(-id, -new_yr) %>% 
+  mutate(baseyr = as.factor(baseyr))
+```
+
+```{r comment=FALSE, warning=FALSE, message=FALSE}
 
 par(mfrow= c(2,3))
 for (i in seq_along(lifetables)) {
   plot(x = lifetables[[i]]$year[lifetables[[i]]$sex == "M"],
        y = lifetables[[i]]$qx[lifetables[[i]]$sex == "M"], log = "y", type = "l",
-       main = lifetables[[i]]$year[1], ylab = "h", xlab = "year")
+       main = names(lifetables)[i], ylab = "h", xlab = "year")
   lines(x = lifetables[[i]]$year[lifetables[[i]]$sex == "F"],
         y = lifetables[[i]]$qx[lifetables[[i]]$sex == "F"], log = "y", type = "l", col = "red")
 }
 
 par(mfrow= c(1,2))
-
 for (j in c("M","F")) {
   plot(x = lifetables[[1]]$age[lifetables[[1]]$sex == j],
        y = lifetables[[1]]$qx[lifetables[[1]]$sex == j], log = "y", type = "l",
@@ -173,13 +194,8 @@ for (j in c("M","F")) {
 ```
 
 ```{r comment=FALSE, warning=FALSE, message=FALSE}
-## ggplot
 
-ONS_lifetables <-
-  do.call(rbind, lifetables) %>% 
-  cbind(id = rep(c(2011, 2030, 2040, 2050, 2060), each = 101))
-
-ggplot(ONS_lifetables, aes(x = age, y = qx, colour = interaction(sex, id))) +
+ggplot(ONS_lifetables, aes(x = age, y = qx, colour = interaction(sex, baseyr))) +
   geom_line() +
   # scale_y_continuous(trans='log2') +
   coord_trans(y = "log10") +
@@ -189,6 +205,8 @@ ggplot(ONS_lifetables, aes(x = age, y = qx, colour = interaction(sex, id))) +
 
 # Comparison with ONS and ETHPOP
 
+2011
+
 ```{r comment=FALSE, warning=FALSE, message=FALSE}
 
 ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = death_rate, colour = ETH.group)) +
@@ -197,7 +215,7 @@ ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = death_rate, colour = ETH.group))
   ggtitle("Male 2011") +
   theme_bw() +
   geom_line(aes(age, qx, colour = "ONS"),
-            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "M", ],
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2011 & ONS_lifetables$sex == "M", ],
             colour = "black")
 
 ggplot(ETHPOP_lifetable_2011F, aes(x = age, y = death_rate, colour = ETH.group)) +
@@ -206,9 +224,32 @@ ggplot(ETHPOP_lifetable_2011F, aes(x = age, y = death_rate, colour = ETH.group))
   coord_trans(y = "log10") +
   theme_bw() +
   geom_line(aes(age, qx, colour = "ONS"),
-            data = ONS_lifetables[ONS_lifetables$id == 2011 & ONS_lifetables$sex == "F", ],
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2011 & ONS_lifetables$sex == "F", ],
             colour = "black")
 ```
+
+```{r comment=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = death_rate, colour = ETH.group)) +
+  geom_line() +
+  ggtitle("Male 2011") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2011 & ONS_lifetables$sex == "M", ],
+            colour = "black") +
+  ylim(0, 0.003) + xlim(0, 60)
+
+ggplot(ETHPOP_lifetable_2011F, aes(x = age, y = death_rate, colour = ETH.group)) +
+  geom_line() +
+  ggtitle("Female 2011") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2011 & ONS_lifetables$sex == "F", ],
+            colour = "black") +
+  ylim(0, 0.003) + xlim(0, 60)
+```
+
+2030
 
 ```{r comment=FALSE, warning=FALSE, message=FALSE}
 
@@ -221,7 +262,7 @@ ETHPOP_lifetable[ETHPOP_lifetable$id == baseyr_2030 & ETHPOP_lifetable$sex == "M
   ggtitle("Male 2030") +
   theme_bw() +
   geom_line(aes(age, qx, colour = "ONS"),
-            data = ONS_lifetables[ONS_lifetables$id == 2030 & ONS_lifetables$sex == "M", ],
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2030 & ONS_lifetables$sex == "M", ],
             colour = "black")
 
 ETHPOP_lifetable[ETHPOP_lifetable$id == baseyr_2030 & ETHPOP_lifetable$sex == "F", ] %>% 
@@ -231,9 +272,48 @@ ETHPOP_lifetable[ETHPOP_lifetable$id == baseyr_2030 & ETHPOP_lifetable$sex == "F
   coord_trans(y = "log10") +
   theme_bw() +
   geom_line(aes(age, qx, colour = "ONS"),
-            data = ONS_lifetables[ONS_lifetables$id == 2030 & ONS_lifetables$sex == "F", ],
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2030 & ONS_lifetables$sex == "F", ],
             colour = "black")
 ```
 
-# Extrapolation of ETHPOP
+```{r comment=FALSE, warning=FALSE, message=FALSE}
+
+baseyr_2030 <- ETHPOP_lifetable$id[ETHPOP_lifetable$yr_age == "2030_0"][1]
+
+ETHPOP_lifetable[ETHPOP_lifetable$id == baseyr_2030 & ETHPOP_lifetable$sex == "M", ] %>% 
+  ggplot(aes(x = age, y = death_rate, colour = ETH.group)) +
+  geom_line() +
+  ggtitle("Male 2030") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2030 & ONS_lifetables$sex == "M", ],
+            colour = "black") +
+  ylim(0, 0.003) + xlim(0, 40)
+
+ETHPOP_lifetable[ETHPOP_lifetable$id == baseyr_2030 & ETHPOP_lifetable$sex == "F", ] %>% 
+  ggplot(aes(x = age, y = death_rate, colour = ETH.group)) +
+  geom_line() +
+  ggtitle("Female 2030") +
+  theme_bw() +
+  geom_line(aes(age, qx, colour = "ONS"),
+            data = ONS_lifetables[ONS_lifetables$baseyr == 2030 & ONS_lifetables$sex == "F", ],
+            colour = "black") +
+  ylim(0, 0.003) + xlim(0, 40)
+```
+
+
+## Life expectancy
+
+ONS
+
+```{r}
+
+ggplot(ONS_lifetables[ONS_lifetables$sex == "M", ], aes(age, ex, colour = baseyr)) +
+  geom_line() +
+  theme_bw()
+
+ggplot(ONS_lifetables[ONS_lifetables$sex == "F", ], aes(age, ex, colour = baseyr)) +
+  geom_line() +
+  theme_bw()
+```
 

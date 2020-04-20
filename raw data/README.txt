@@ -1,3 +1,3 @@
-lifetable from: lttemplateew2018.xlsx
+lifetable from: lttemplateew2018.xls
 
 https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/datasets/nationallifetablesunitedkingdomreferencetables

@@ -1,5 +1,5 @@
 
-#' read_lifetables
+#' read_life tables
 #'
 #' @param input_dir
 #' @param output_dir

@@ -1,5 +1,5 @@
 
-#' make_ETHPOP_lifetable
+#' make_ETHPOP_life able
 #'
 #' @param input_dir location of clean_pop.csv and clean_deaths_ageyrs.csv
 #' @param age_name age column heading in input data e.g. age or agegrp
