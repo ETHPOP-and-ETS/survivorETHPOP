@@ -48,25 +48,23 @@ make_ETHPOP_lifetable <- function(input_dir = here::here("raw data"),
               by = c("year", age_name, "sex", "ETH.group")) %>%
     full_join(yr_age_id_lookup(), by = c("age", "year")) %>%   # join year-age unique group id
     group_by(id, ETH.group, sex) %>%
-    # arrange(age, sex, ETH.group, year) %>%
+    arrange(age) %>%
+    na.omit() %>%
     mutate(death_rate = deaths/pop,                            # raw death rate
            yr_age = paste(year, age, sep = "_"),
            deaths_back = lag(deaths, 1),
-           deaths_fwd = lead(deaths, 1),
+           deaths_fwd  = lead(deaths, 1),
            pop_back = lag(pop, 1),
-           pop_fwd = lead(pop, 1),
+           pop_fwd  = lead(pop, 1),
            avg_deaths = (deaths_back + deaths + deaths_fwd)/3, # 3 calendar year average
            avg_pop = (pop_back + pop + pop_fwd)/3,
            mx = avg_deaths/avg_pop,                            # central rate of mortality
-           mx = ifelse(is.na(mx), yes = death_rate, no = mx),
-           qx = 2*mx/(2 + mx),
-           Lx = lead(pop, 1, default = 0) + 0.5*deaths,  # total person-years age x to x+1
+           mx = ifelse(is.na(mx), yes = death_rate, no = mx),  # fill in missing mx with raw estimate
+           qx = 2*mx/(2 + mx),                                 # mortality rate (used by ONS)
+           Lx = lead(pop, 1, default = 0) + 0.5*deaths,        # total person-years age x to x+1
            Tx = rev(cumsum(rev(Lx))),       # total number of person-years to death
            ex = Tx/pop,
-           ) %>%                             # mortality rate (used by ONS)
-    filter(year != 2061) %>%                  # remove last year because NA number of deaths
-    # group_by(ETH.group, sex, id) %>%
-    mutate(S = exp(-cumsum(death_rate)),
+           S  = exp(-cumsum(death_rate)),
            S_qx = exp(-cumsum(qx))) %>%
     ungroup() %>%
     select(-deaths_back, -deaths_fwd,                          # remove intermediate variables
