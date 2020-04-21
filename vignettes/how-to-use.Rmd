@@ -157,8 +157,6 @@ Read in and check.
 
 lifetables <- read_lifetables()
 
-names(lifetables) <- map(lifetables, ~.$year[1])
-
 ONS_lifetables <-
   do.call(rbind, lifetables) %>% 
   mutate(new_yr = year < dplyr::lag(year, default = Inf),

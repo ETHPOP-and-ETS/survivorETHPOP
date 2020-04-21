@@ -16,6 +16,7 @@ read_lifetables <- function(input_dir = here::here("raw data"),
   file_names <- dir_names[grepl("lifetable", dir_names)]
 
   dat <- map(file_names, read_csv, progress = FALSE)
+  names(dat) <- map(dat, ~.$year[1])
 
   return(dat)
 }

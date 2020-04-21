@@ -1,11 +1,18 @@
 
-#' make_ETHPOP_life able
+#' make ETHPOP life table
+#'
+#' equations from:
+#' https://www.lifeexpectancy.org/lifetable.shtml
+#'
+#' ex from:
+#' https://yongfu.name/2017/12/11/Life_Tables.html
 #'
 #' @param input_dir location of clean_pop.csv and clean_deaths_ageyrs.csv
 #' @param age_name age column heading in input data e.g. age or agegrp
 #'
 #' @return
 #' @export
+#' @import readr, dplyr
 #'
 #' @examples
 #'
@@ -35,12 +42,13 @@ make_ETHPOP_lifetable <- function(input_dir = here::here("raw data"),
   death_dat <- death_dat %>% select(-X1)
   pop_dat <- pop_dat %>% select(-X1)
 
-  ## join datasets
+  ## join death and pop datasets
   full_dat <-
     full_join(death_dat, pop_dat,
               by = c("year", age_name, "sex", "ETH.group")) %>%
-    full_join(yr_age_id_lookup(), by = c("age", "year")) %>%     # join year-age unique group id
-    arrange(age, sex, ETH.group, year) %>%
+    full_join(yr_age_id_lookup(), by = c("age", "year")) %>%   # join year-age unique group id
+    group_by(id, ETH.group, sex) %>%
+    # arrange(age, sex, ETH.group, year) %>%
     mutate(death_rate = deaths/pop,                            # raw death rate
            yr_age = paste(year, age, sep = "_"),
            deaths_back = lag(deaths, 1),
@@ -51,11 +59,16 @@ make_ETHPOP_lifetable <- function(input_dir = here::here("raw data"),
            avg_pop = (pop_back + pop + pop_fwd)/3,
            mx = avg_deaths/avg_pop,                            # central rate of mortality
            mx = ifelse(is.na(mx), yes = death_rate, no = mx),
-           qx = 2*mx/(2 + mx)) %>%                             # mortality rate
+           qx = 2*mx/(2 + mx),
+           Lx = lead(pop, 1, default = 0) + 0.5*deaths,  # total person-years age x to x+1
+           Tx = rev(cumsum(rev(Lx))),       # total number of person-years to death
+           ex = Tx/pop,
+           ) %>%                             # mortality rate (used by ONS)
     filter(year != 2061) %>%                  # remove last year because NA number of deaths
-    group_by(ETH.group, sex, id) %>%
+    # group_by(ETH.group, sex, id) %>%
     mutate(S = exp(-cumsum(death_rate)),
            S_qx = exp(-cumsum(qx))) %>%
+    ungroup() %>%
     select(-deaths_back, -deaths_fwd,                          # remove intermediate variables
            -pop_back, -pop_fwd,
            -avg_deaths, -avg_pop)
