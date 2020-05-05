@@ -51,6 +51,8 @@ $$
 ```{r comment=FALSE, warning=FALSE, message=FALSE}
 
 ETHPOP_lifetable <- make_ETHPOP_lifetable()
+# save(ETHPOP_lifetable, file = here::here("data", "ETHPOP_lifetable.RData"))
+
 
 head(ETHPOP_lifetable)
 
@@ -149,6 +151,8 @@ ggplot(ETHPOP_lifetable_2011M, aes(x = age, y = S, colour = ETH.group)) +
   theme_bw()
 ```
 
+---
+
 # ONS lifetables
 
 Read in and check.
@@ -156,6 +160,8 @@ Read in and check.
 ```{r comment=FALSE, warning=FALSE, message=FALSE}
 
 lifetables <- read_lifetables()
+# save(lifetables, file = here::here("data", "lifetables.RData"))
+
 
 ONS_lifetables <-
   do.call(rbind, lifetables) %>% 
