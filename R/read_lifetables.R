@@ -9,11 +9,12 @@
 #' @param input_dir read data folder
 #' @param output_dir save data
 #'
-#' @return
+#' @return list of life tables
 #' @export
 #'
 read_lifetables <- function(input_dir =
-                              system.file("extdata", "lttemplateew_single_years", package = "survivorETHPOP"),
+                              system.file("extdata", "lttemplateew_single_years",
+                                          package = "survivorETHPOP"),
                             output_dir = "") {
 
   dir_names  <- dir(input_dir, full.names = TRUE)
@@ -22,12 +23,13 @@ read_lifetables <- function(input_dir =
   dat <- map(file_names,
              .f = read_lt)
 
+  # birth year for cohort
   names(dat) <- map(dat, ~.$year[1])
 
   return(dat)
 }
 
-#
+# read in single cohort year life table
 read_lt <- function(file_name) {
 
   ltm <- readxl::read_xlsx(file_name, range = "A9:G110")

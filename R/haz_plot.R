@@ -1,12 +1,14 @@
 
 #' haz_plot
 #'
-#' @param dat
-#' @param add
+#' Base R functions
+#'
+#' @param dat life table data
+#' @param add TRUE/FALSE plot over current plot?
 #' @param hz_name
 #' @param ...
 #'
-#' @return
+#' @return dat
 #' @export
 #'
 #' @examples

@@ -1,12 +1,14 @@
 
 #' surv_plot
 #'
-#' @param dat
-#' @param add
-#' @param S_name S or S_qx
-#' @param ...
+#' Base R functions
 #'
-#' @return
+#' @param dat life table data
+#' @param add TRUE/FALSE plot over current plot?
+#' @param S_name S or S_qx; which type of survival statistic to use
+#' @param ... additional arguments to pass to plotting function
+#'
+#' @return dat
 #' @export
 #'
 #' @examples
